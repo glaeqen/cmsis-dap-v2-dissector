@@ -197,6 +197,8 @@ dap.fields.xfer_perr = ProtoField.uint8("cmsis_dap.transfer.response.protocol_er
 dap.fields.xfer_miss = ProtoField.uint8("cmsis_dap.transfer.response.value_mismatch", "Value Mismtch", base.HEX, {[0]="Pass", [1]="Error"}, 0x10)
 dap.fields.xfer_rdat = ProtoField.uint32("cmsis_dap.transfer.read.data", "Read", base.DEC_HEX)
 
+dap.fields.unknown = ProtoField.bytes("cmsis_dap.unknown", "Raw data")
+
 dap.experts.zl = ProtoExpert.new("cmsis_dap.zero_length", "Zero length", expert.group.MALFORMED, expert.severity.WARN)
 dap.experts.lost = ProtoExpert.new("cmsis_dap.packet_lost", "Relative packet lost", expert.group.PROTOCOL, expert.severity.WARN)
 
@@ -498,6 +500,11 @@ function dissect_swj_seq(is_request, buffer, tree)
    end
 end
 
+function dissect_unknown(is_request, buffer, tree)
+    tree:add_le( dap.fields.unknown, buffer(0))
+    return ""
+end
+
 function dissect_swd_configure(is_request, buffer, tree)
    if is_request then
       local subtree = tree:add_le( dap.fields.swd_cfg, buffer(0, 1))
@@ -656,6 +663,8 @@ function dap.dissector(buffer, pinfo, tree)
       -- TODO: add handling
    elseif cmd == vals.command.DAP_EXECUTE_COMMANDS then
       -- TODO: add handling
+   else
+      info_text = info_text .. dissect_unknown(is_request, buffer(1), subtree)
    end
    pinfo.cols.info = info_text
 
